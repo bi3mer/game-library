@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"image/color"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -20,7 +22,7 @@ import (
 	"gioui.org/widget/material"
 )
 
-const currentVersion = "v0.0.1"
+const currentVersion = "v0.0.2"
 
 type GitHubTag struct {
 	Name string `json:"name"`
@@ -51,7 +53,6 @@ func checkForUpdate() (bool, string) {
 }
 
 func github_release_url(repo, filename string) string {
-
 	switch runtime.GOOS {
 	case "darwin":
 		return fmt.Sprintf("https://github.com/bi3mer/%s/releases/latest/download/mac-%s",
@@ -85,7 +86,23 @@ func NewGame(name, repo, exeName string) Game {
 	}
 }
 
-func GameFetch(g Game) bool {
+func GetGamesCSV() ([][]string, error) {
+	resp, err := http.Get("https://raw.githubusercontent.com/bi3mer/game-library/refs/heads/main/games.csv")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	games, err := csv.NewReader(resp.Body).ReadAll()
+	if err != nil {
+		fmt.Printf("Error: unable to read CSV: %s", err)
+		return nil, err
+	}
+
+	return games, err
+}
+
+func DownloadGame(g Game) bool {
 	resp, err := http.Get(g.URL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fetch error fetching %s: %v\n", g.URL, err)
@@ -131,6 +148,7 @@ func main() {
 		fmt.Println("ERROR: Unable to get executable path.")
 		os.Exit(1)
 	}
+
 	execDir := filepath.Dir(execPath)
 	os.Chdir(execDir)
 
@@ -142,11 +160,38 @@ func main() {
 
 	updateAvailable, newVersion := checkForUpdate()
 
-	games := []Game{
-		NewGame("Wordle", "c-wordle", "wordle"),
-		NewGame("Tic-Tac-Toe", "c-tic-tac-toe", "tic-tac-toe"),
-		NewGame("Snake", "c-snake", "snake"),
-		NewGame("Pong", "raylib-pong", "pong"),
+	games := []Game{}
+	gameData, err := GetGamesCSV()
+	if err != nil {
+		file, err := os.Open(filepath.Join("builds", "games.csv"))
+		if err != nil {
+			log.Fatal("Unable to get csv data from web or locally! Please try again with an internet connection.")
+		}
+
+		gameData, err = csv.NewReader(file).ReadAll()
+		if err != nil {
+			log.Printf("Error: unable to read CSV: %s", err)
+			log.Fatal("Exitting")
+		}
+	} else {
+		file, err := os.Create(filepath.Join("builds", "games.csv"))
+		if err != nil {
+			fmt.Printf("ERROR: unable to write CSV file -> %s", err)
+		} else {
+			defer file.Close()
+
+			writer := csv.NewWriter(file)
+			err = writer.WriteAll(gameData)
+			if err != nil {
+				log.Printf("Error writing records to CSV: %s", err)
+			} else if err := writer.Error(); err != nil {
+				log.Fatal("Error flushing data to file system:", err)
+			}
+		}
+	}
+
+	for _, line := range gameData {
+		games = append(games, NewGame(line[0], line[1], line[2]))
 	}
 
 	buttons := make([]widget.Clickable, len(games))
@@ -178,7 +223,7 @@ func main() {
 							}
 							exec.Command(path).Start()
 						} else {
-							GameFetch(games[i])
+							DownloadGame(games[i])
 						}
 					}
 				}
