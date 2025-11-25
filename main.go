@@ -95,7 +95,15 @@ func isDownloaded(g Game) bool {
 }
 
 func main() {
-	err := os.Mkdir("builds", 0750)
+	execPath, err := os.Executable()
+	if err != nil {
+		fmt.Println("ERROR: Unable to get executable path.")
+		os.Exit(1)
+	}
+	execDir := filepath.Dir(execPath)
+	os.Chdir(execDir)
+
+	err = os.Mkdir("builds", 0750)
 	if err != nil && !os.IsExist(err) {
 		fmt.Println("ERROR: Unable to make the 'builds' directory.")
 		os.Exit(1)
