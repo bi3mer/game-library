@@ -8,15 +8,15 @@ import (
 	"runtime"
 )
 
-func github_release_url(repo, tag, filename string) string {
+func github_release_url(repo, filename string) string {
 
 	switch runtime.GOOS {
 	case "darwin":
-		return fmt.Sprintf("https://github.com/bi3mer/%s/releases/download/%s/mac-%s",
-			repo, tag, filename)
+		return fmt.Sprintf("https://github.com/bi3mer/%s/releases/latest/download/mac-%s",
+			repo, filename)
 	case "windows":
-		return fmt.Sprintf("https://github.com/bi3mer/%s/releases/download/%s/win-%s.exe",
-			repo, tag, filename)
+		return fmt.Sprintf("https://github.com/bi3mer/%s/releases/latest/download/win-%s.exe",
+			repo, filename)
 	}
 
 	fmt.Printf("Unsupported OS type: %s\n", runtime.GOOS)
@@ -71,17 +71,15 @@ func main() {
 	games := []Game{
 		{
 			Name:     "Snake",
-			URL:      github_release_url("c-snake", "v0.0.0", "snake"),
+			URL:      github_release_url("c-snake", "snake"),
 			FileName: "snake",
 		},
 		{
 			Name:     "Pong",
-			URL:      github_release_url("raylib-pong", "v0.0.0", "pong"),
+			URL:      github_release_url("raylib-pong", "pong"),
 			FileName: "pong",
 		},
 	}
-
-	// https://github.com/bi3mer/raylib-pong/releases/download/v0.0.0/mac-pong
 
 	fetch_game(games[0])
 
