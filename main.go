@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -68,19 +69,24 @@ func fetch_game(g Game) bool {
 func main() {
 	fmt.Printf("Colan's Game Library\n")
 
+	err := os.Mkdir("builds", 0750)
+	if err != nil && !os.IsExist(err) {
+		fmt.Println("ERROR: Unable to make the 'builds' directory.")
+		os.Exit(1)
+	}
+
 	games := []Game{
 		{
 			Name:     "Snake",
 			URL:      github_release_url("c-snake", "snake"),
-			FileName: "snake",
+			FileName: filepath.Join("builds", "snake"),
 		},
 		{
 			Name:     "Pong",
 			URL:      github_release_url("raylib-pong", "pong"),
-			FileName: "pong",
+			FileName: filepath.Join("builds", "pong"),
 		},
 	}
 
 	fetch_game(games[0])
-
 }
