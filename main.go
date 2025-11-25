@@ -31,7 +31,20 @@ type Game struct {
 	FileName string
 }
 
-func fetch_game(g Game) bool {
+func NewGame(name, repo, exeName string) Game {
+	filename := exeName
+	if runtime.GOOS == "windows" {
+		filename += ".exe"
+	}
+
+	return Game{
+		Name:     name,
+		URL:      github_release_url(repo, exeName),
+		FileName: filepath.Join("builds", filename),
+	}
+}
+
+func GameFetch(g Game) bool {
 	resp, err := http.Get(g.URL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fetch error fetching %s: %v\n", g.URL, err)
@@ -76,17 +89,11 @@ func main() {
 	}
 
 	games := []Game{
-		{
-			Name:     "Snake",
-			URL:      github_release_url("c-snake", "snake"),
-			FileName: filepath.Join("builds", "snake"),
-		},
-		{
-			Name:     "Pong",
-			URL:      github_release_url("raylib-pong", "pong"),
-			FileName: filepath.Join("builds", "pong"),
-		},
+		NewGame("Wordle", "c-wordle", "wordle"),
+		NewGame("Tic-Tac-Toe", "c-tic-tac-toe", "tic-tac-toe"),
+		NewGame("Snake", "c-snake", "snake"),
+		NewGame("Pong", "raylib-pong", "pong"),
 	}
 
-	fetch_game(games[0])
+	GameFetch(games[3])
 }
