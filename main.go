@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"image/color"
 	"io"
@@ -18,6 +19,36 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 )
+
+const currentVersion = "v0.0.1"
+
+type GitHubTag struct {
+	Name string `json:"name"`
+}
+
+func checkForUpdate() (bool, string) {
+	resp, err := http.Get("https://api.github.com/repos/bi3mer/game-library/tags")
+	if err != nil {
+		return false, ""
+	}
+	defer resp.Body.Close()
+
+	var tags []GitHubTag
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return false, ""
+	}
+
+	if len(tags) == 0 {
+		return false, ""
+	}
+
+	latestVersion := tags[0].Name
+	if latestVersion != currentVersion {
+		return true, latestVersion
+	}
+
+	return false, ""
+}
 
 func github_release_url(repo, filename string) string {
 
@@ -109,6 +140,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	updateAvailable, newVersion := checkForUpdate()
+
 	games := []Game{
 		NewGame("Wordle", "c-wordle", "wordle"),
 		NewGame("Tic-Tac-Toe", "c-tic-tac-toe", "tic-tac-toe"),
@@ -160,6 +193,19 @@ func main() {
 							title.Color = color.NRGBA{R: 0, G: 0, B: 0, A: 255}
 							title.Alignment = text.Middle
 							return title.Layout(gtx)
+						})
+					}),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						if !updateAvailable {
+							return layout.Dimensions{}
+						}
+						return layout.Inset{
+							Bottom: unit.Dp(8),
+						}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							label := material.Body2(th, "Update available: "+newVersion)
+							label.Color = color.NRGBA{R: 200, G: 100, B: 0, A: 255}
+							label.Alignment = text.Middle
+							return label.Layout(gtx)
 						})
 					}),
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {

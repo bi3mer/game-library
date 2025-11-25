@@ -17,15 +17,7 @@ go install gioui.org/cmd/gogio@latest
 ```
 
 Then you can build:
-GOOS=windows GOARCH=amd64 go build -o gamelibrary.exe .
 
 ```
-mkdir release
-~/go/bin/gogio -target windows .
-mv main.exe release/win-gamelibrary.exe
-rm *.syso
-
-~/go/bin/gogio -target macos .
-mv main_amd64.app	 release/mac-amd-gamelibrary.app
-mv main_arm64.app release/mac-arm-gamelibrary.app
+./make_release.sh
 ```
