@@ -194,7 +194,9 @@ func main() {
 		games = append(games, NewGame(line[0], line[1], line[2]))
 	}
 
-	buttons := make([]widget.Clickable, len(games))
+	downloadButtons := make([]widget.Clickable, len(games))
+	deleteButtons := make([]widget.Clickable, len(games))
+
 	go func() {
 		w := new(app.Window)
 		w.Option(app.Title("Colan's Game Library"))
@@ -215,7 +217,7 @@ func main() {
 				gtx := app.NewContext(&ops, e)
 
 				for i := range games {
-					if buttons[i].Clicked(gtx) {
+					if downloadButtons[i].Clicked(gtx) {
 						if isDownloaded(games[i]) {
 							path := games[i].FileName
 							if runtime.GOOS != "windows" {
@@ -224,6 +226,16 @@ func main() {
 							exec.Command(path).Start()
 						} else {
 							DownloadGame(games[i])
+						}
+					}
+				}
+
+				for i := range games {
+					if deleteButtons[i].Clicked(gtx) {
+						if !isDownloaded(games[i]) {
+							os.Remove(games[i].FileName)
+						} else {
+							// TODO: hide
 						}
 					}
 				}
@@ -276,7 +288,7 @@ func main() {
 											if isDownloaded(games[i]) {
 												btnText = "Play"
 											}
-											btn := material.Button(th, &buttons[i], btnText)
+											btn := material.Button(th, &downloadButtons[i], btnText)
 											return btn.Layout(gtx)
 										}),
 									)
